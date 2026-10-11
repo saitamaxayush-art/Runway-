@@ -52,20 +52,34 @@ export function Line3D({ s, simState = null }) {
         .join(' ')
     : null
 
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    if (!rect.width) return
+    const relX = ((e.clientX - rect.left) / rect.width) * W
+    const idx = Math.round((relX - padLeft) / (plotW / 29))
+    setHoverIndex(Math.max(0, Math.min(29, idx)))
+  }
+
   const hoveredDay = hoverIndex !== null ? hoverIndex + 1 : s.day
   const hoveredVal = hoverIndex !== null ? ys[hoverIndex] : ys[s.day - 1]
-  const simHoveredVal = simYs && hoverIndex !== null ? simYs[hoverIndex] : null
+  const simHoveredVal = simYs ? (hoverIndex !== null ? simYs[hoverIndex] : simYs[s.day - 1]) : null
+  const simDelta = simHoveredVal !== null ? simHoveredVal - hoveredVal : null
 
   return (
     <div className="line-3d-stage">
       <div className="line-3d-hud">
         <div className="line-hud-badge">
-          <span>Day {hoveredDay} balance:</span>
+          <span>Day {hoveredDay} Baseline:</span>
           <b>{inr(hoveredVal)}</b>
           {simHoveredVal !== null && (
-            <span className="line-hud-sim-preview">
-              (Preview: <b>{inr(simHoveredVal)}</b>)
-            </span>
+            <>
+              <span className="line-hud-sim-preview">
+                | Simulated: <b>{inr(simHoveredVal)}</b>
+              </span>
+              <span className={`line-hud-delta ${simDelta < 0 ? 'bad' : 'good'}`}>
+                ({simDelta >= 0 ? '+' : ''}{inr(simDelta)})
+              </span>
+            </>
           )}
         </div>
       </div>
@@ -76,6 +90,7 @@ export function Line3D({ s, simState = null }) {
           className="line-3d-svg"
           role="img"
           aria-label="3D Balance forecast across 30 days"
+          onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverIndex(null)}
         >
           <defs>
@@ -137,11 +152,11 @@ export function Line3D({ s, simState = null }) {
             const y = Y(v)
             const isToday = i === s.day - 1
             const isHovered = i === hoverIndex
+            const simY = simYs ? Y(simYs[i]) : null
             return (
               <g
                 key={i}
                 className="day-node-group"
-                onMouseEnter={() => setHoverIndex(i)}
                 style={{ cursor: 'pointer' }}
               >
                 {/* Transparent hit target */}
@@ -163,6 +178,19 @@ export function Line3D({ s, simState = null }) {
                   />
                 )}
 
+                {/* Simulated vertical gap indicator */}
+                {isHovered && simY !== null && (
+                  <line
+                    x1={x}
+                    x2={x}
+                    y1={y}
+                    y2={simY}
+                    stroke="var(--brass-deep)"
+                    strokeWidth="2"
+                    strokeDasharray="2 2"
+                  />
+                )}
+
                 {isToday && (
                   <circle
                     cx={x}
@@ -179,6 +207,52 @@ export function Line3D({ s, simState = null }) {
                     r="5"
                     className="hover-node-3d"
                   />
+                )}
+
+                {isHovered && simY !== null && (
+                  <circle
+                    cx={x}
+                    cy={simY}
+                    r="5"
+                    className="hover-sim-node-3d"
+                  />
+                )}
+
+                {/* Floating tooltip above cursor */}
+                {isHovered && (
+                  <g
+                    transform={`translate(${Math.min(W - 145, Math.max(padLeft, x - 65))}, ${Math.max(12, Math.min(y - (simYs ? 60 : 42), H - 75))})`}
+                    className="line-3d-floating-tooltip"
+                  >
+                    <rect
+                      width="135"
+                      height={simYs ? 52 : 32}
+                      rx="4"
+                      fill="#064E3B"
+                      stroke="#C99A3C"
+                      strokeWidth="1.2"
+                      opacity="0.96"
+                    />
+                    <text x="8" y="16" fill="#F8E7C9" fontSize="10" fontWeight="700">
+                      Day {hoveredDay}: {inr(hoveredVal)}
+                    </text>
+                    {simYs && (
+                      <text x="8" y="32" fill="#C99A3C" fontSize="10" fontWeight="700">
+                        Simulated: {inr(simYs[i])}
+                      </text>
+                    )}
+                    {simYs && (
+                      <text
+                        x="8"
+                        y="45"
+                        fill={simYs[i] < v ? '#FCA5A5' : '#86EFAC'}
+                        fontSize="9"
+                        fontWeight="700"
+                      >
+                        Impact: {simYs[i] - v >= 0 ? '+' : ''}{inr(simYs[i] - v)}
+                      </text>
+                    )}
+                  </g>
                 )}
               </g>
             )

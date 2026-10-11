@@ -1734,6 +1734,26 @@ table {
   stroke: var(--bg);
   stroke-width: 2;
 }
+.hover-sim-node-3d {
+  fill: var(--brass-deep);
+  stroke: var(--bg);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px var(--brass-deep));
+}
+.line-hud-delta {
+  margin-left: 6px;
+  font-weight: 700;
+}
+.line-hud-delta.bad {
+  color: #b91c1c;
+}
+.line-hud-delta.good {
+  color: #064E3B;
+}
+.line-3d-floating-tooltip {
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(6, 78, 59, 0.25));
+}
 .ax-3d {
   font: 700 11px Manrope, sans-serif;
   fill: var(--ink);
